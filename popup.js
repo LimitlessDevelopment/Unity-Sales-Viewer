@@ -171,6 +171,7 @@ Invoice Number: ${r.invoice}`;
         list.sort((a, b) => new Date(b.last) - new Date(a.last));
     
         let grossSum = 0, revSum = 0;
+        console.log(list)
         list.forEach(r => {
             const tr = salesTBody.insertRow();
     
@@ -196,6 +197,7 @@ Invoice Number: ${r.invoice}`;
             });
     
             grossSum += num(r.gross);
+            console.log(grossSum + "   " + r.gross);
             revSum   += num(r.revenue);
         });
     
@@ -350,7 +352,7 @@ Invoice Number: ${r.invoice}`;
     }
 
     // Helpers
-    const num = s => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
+    const num = s => parseFloat((s || "").replace(/[^-\d.]/g, "")) || 0;
     const money = s => `$${s || "0.00"}`;
     const pretty = s => s ? `${prettyDate(s.slice(8, 10))} at ${s.slice(11, 16)}` : "";
     const prettyDate = s => {
