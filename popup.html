@@ -312,6 +312,27 @@
             white-space: nowrap;
         }
 
+        #salesTable thead th[data-sort-key] {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #salesTable thead th[data-sort-key]::after {
+            content: " \2195";
+            opacity: 0.35;
+            font-size: 11px;
+        }
+
+        #salesTable thead th.sort-asc::after {
+            content: " \2191";
+            opacity: 0.9;
+        }
+
+        #salesTable thead th.sort-desc::after {
+            content: " \2193";
+            opacity: 0.9;
+        }
+
         /* sales & general table cells stay no-wrap by default */
         tbody td {
             border-bottom: 1px solid var(--border);
@@ -696,13 +717,13 @@
         <table id="salesTable">
             <thead>
             <tr>
-                <th>Name</th>
-                <th>Price</th>
-                <th>Gross</th>
-                <th>Net</th>
-                <th>Qty</th>
-                <th>First</th>
-                <th>Last</th>
+                <th data-sort-key="name">Name</th>
+                <th data-sort-key="price">Price</th>
+                <th data-sort-key="gross">Gross</th>
+                <th data-sort-key="revenue">Net</th>
+                <th data-sort-key="quantity">Qty</th>
+                <th data-sort-key="first">First</th>
+                <th data-sort-key="last">Last</th>
             </tr>
             </thead>
             <tbody></tbody>
