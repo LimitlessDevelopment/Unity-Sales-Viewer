@@ -189,8 +189,8 @@ Invoice Number: ${r.invoice}`;
                 money(r.gross),
                 money(r.revenue),
                 Number(r.sales) - Number(r.refunds),
-                pretty(r.last),
                 pretty(r.first),
+                pretty(r.last),
             ].forEach(txt => {
                 const td = tr.insertCell();
                 td.textContent = txt;
