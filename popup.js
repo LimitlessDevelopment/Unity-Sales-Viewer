@@ -18,6 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const panels = [...document.querySelectorAll("[data-panel]")];
     const zones = document.querySelectorAll(".zone");
     const tooltip = document.getElementById('tooltip');
+    const salesHeaders = [...document.querySelectorAll("#salesTable thead th[data-sort-key]")];
 
     const verifyInvoiceBtn = document.getElementById("verifyInvoiceBtn");
     const invoiceInput = document.getElementById("invoiceInput");
@@ -27,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let expectedGross = 0;
     let expectedNet = 0;
+    let salesRows = [];
+    let salesSort = { key: "last", direction: "desc" };
     const raw = localStorage.getItem("theme") || "auto";
     showIcon(raw);
     // Tab switching
@@ -36,6 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     tabs.forEach(t => t.addEventListener("click", () => switchTo(t.dataset.tab)));
+    salesHeaders.forEach(header => {
+        header.addEventListener("click", () => {
+            const sortKey = header.dataset.sortKey;
+            if (salesSort.key === sortKey) {
+                salesSort.direction = salesSort.direction === "asc" ? "desc" : "asc";
+            } else {
+                salesSort = {
+                    key: sortKey,
+                    direction: sortKey === "name" ? "asc" : "desc",
+                };
+            }
+            renderSalesRows();
+        });
+    });
 
     setTooltip(zones[0], () => `Expected In Month: ${expectedGross}`);
     setTooltip(zones[1], () => `Expected In Month: ${expectedNet}`);
@@ -168,36 +185,15 @@ Invoice Number: ${r.invoice}`;
         const monthEl = document.querySelector(".sales-month");
         monthEl.textContent = new Date().toLocaleString("en-US", { month: 'long', year: 'numeric' });
     
-        list.sort((a, b) => new Date(b.last) - new Date(a.last));
-    
+        salesRows = Array.isArray(list) ? [...list] : [];
+
         let grossSum = 0, revSum = 0;
-        list.forEach(r => {
-            const tr = salesTBody.insertRow();
-    
-            // 1) Name cell with link
-            const nameTd = tr.insertCell();
-            const link   = document.createElement('a');
-            link.href    = `https://assetstore.unity.com/packages/slug/${r.package_id}`;
-            link.target  = '_blank';
-            link.textContent = r.name;
-            nameTd.appendChild(link);
-    
-            // 2) The rest of the columns
-            [
-                money(r.price),
-                money(r.gross),
-                money(r.revenue),
-                Number(r.sales) - Number(r.refunds),
-                pretty(r.last),
-                pretty(r.first),
-            ].forEach(txt => {
-                const td = tr.insertCell();
-                td.textContent = txt;
-            });
-    
+        salesRows.forEach(r => {
             grossSum += num(r.gross);
             revSum   += num(r.revenue);
         });
+
+        renderSalesRows();
     
         totalGross.textContent   = money(grossSum.toFixed(2));
         totalRevenue.textContent = money(revSum.toFixed(2));
@@ -217,6 +213,79 @@ Invoice Number: ${r.invoice}`;
         });
     }
     
+
+    function renderSalesRows() {
+        salesTBody.innerHTML = "";
+        updateSalesSortHeaders();
+
+        sortSalesRows([...salesRows]).forEach(r => {
+            const tr = salesTBody.insertRow();
+
+            const nameTd = tr.insertCell();
+            const link   = document.createElement('a');
+            link.href    = `https://assetstore.unity.com/packages/slug/${r.package_id}`;
+            link.target  = '_blank';
+            link.textContent = r.name;
+            nameTd.appendChild(link);
+
+            [
+                money(r.price),
+                money(r.gross),
+                money(r.revenue),
+                Number(r.sales) - Number(r.refunds),
+                pretty(r.first),
+                pretty(r.last),
+            ].forEach(txt => {
+                const td = tr.insertCell();
+                td.textContent = txt;
+            });
+        });
+    }
+
+    function sortSalesRows(list) {
+        const direction = salesSort.direction === "asc" ? 1 : -1;
+        return list.sort((a, b) => {
+            let result = 0;
+
+            switch (salesSort.key) {
+                case "name":
+                    result = (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+                    break;
+                case "price":
+                    result = num(a.price) - num(b.price);
+                    break;
+                case "gross":
+                    result = num(a.gross) - num(b.gross);
+                    break;
+                case "revenue":
+                    result = num(a.revenue) - num(b.revenue);
+                    break;
+                case "quantity":
+                    result = (Number(a.sales) - Number(a.refunds)) - (Number(b.sales) - Number(b.refunds));
+                    break;
+                case "first":
+                    result = new Date(a.first || 0) - new Date(b.first || 0);
+                    break;
+                case "last":
+                    result = new Date(a.last || 0) - new Date(b.last || 0);
+                    break;
+            }
+
+            if (result === 0) {
+                return (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" });
+            }
+
+            return result * direction;
+        });
+    }
+
+    function updateSalesSortHeaders() {
+        salesHeaders.forEach(header => {
+            const isActive = header.dataset.sortKey === salesSort.key;
+            header.classList.toggle("sort-asc", isActive && salesSort.direction === "asc");
+            header.classList.toggle("sort-desc", isActive && salesSort.direction === "desc");
+        });
+    }
 
     function renderSalesChart(data) {
         const now = new Date();
@@ -350,7 +419,7 @@ Invoice Number: ${r.invoice}`;
     }
 
     // Helpers
-    const num = s => parseFloat((s || "").replace(/[^\d.]/g, "")) || 0;
+    const num = s => parseFloat((s || "").replace(/[^-\d.]/g, "")) || 0;
     const money = s => `$${s || "0.00"}`;
     const pretty = s => s ? `${prettyDate(s.slice(8, 10))} at ${s.slice(11, 16)}` : "";
     const prettyDate = s => {

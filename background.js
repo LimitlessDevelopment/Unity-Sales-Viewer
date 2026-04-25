@@ -548,7 +548,7 @@ function getCsrfCookie() {
 
 /* ---------- SESSION EXPIRED NOTIFICATION ---------- */
 function showSessionExpiredNotification() {
-    redirectToLogin();
+    //redirectToLogin();
     chrome.notifications.create(NOTIF_EXPIRED, {
         type: "basic",
         title: "Unity Session Expired",
